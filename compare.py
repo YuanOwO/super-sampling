@@ -5,7 +5,7 @@ from subprocess import PIPE, Popen
 from sys import argv, platform
 
 import matplotlib.pyplot as plt
-from matplotlib.ticker import MultipleLocator
+from matplotlib.ticker import AutoMinorLocator, MaxNLocator, MultipleLocator
 from mpl_toolkits.axes_grid1 import host_subplot
 from tqdm import tqdm
 
@@ -82,15 +82,18 @@ def show_psnr_ssim_plot(filename: str, keys: list, psnr: list, ssim: list):
     # plt.show()
 
 
-def show_diff_ssim_plot(
+def show_diff_plot(
     filename: str,
-    keys: list,
-    ssim1: list,
+    x: list,
+    ylabel: str,
+    y1: list,
     label1: str,
-    ssim2: list,
+    y2: list,
     label2: str,
-    ssim3: list = None,
+    y3: list = None,
     label3: str = None,
+    *,
+    logscale: bool = False,
 ):
     """顯示 SSIM 差異的折線圖"""
     plt.clf()
@@ -98,20 +101,23 @@ def show_diff_ssim_plot(
 
     # plt.title("SSIM Difference")
     plt.xlabel("Block Size (K)")
-    plt.ylabel("SSIM Value")
+    plt.ylabel(ylabel)
 
-    plt.plot(keys, ssim1, "o-", label=label1)
-    plt.plot(keys, ssim2, "^-", label=label2)
-    if ssim3 and label3:
-        plt.plot(keys, ssim3, "s-", label=label3)
+    plt.plot(x, y1, "o-", label=label1)
+    plt.plot(x, y2, "^-", label=label2)
+    if y3 and label3:
+        plt.plot(x, y3, "s-", label=label3)
 
     plt.xlim(0, 64)
     plt.gca().xaxis.set_major_locator(MultipleLocator(8))
     plt.gca().xaxis.set_minor_locator(MultipleLocator(2))
 
-    plt.ylim(0, 1)
-    plt.gca().yaxis.set_major_locator(MultipleLocator(0.2))
-    plt.gca().yaxis.set_minor_locator(MultipleLocator(0.05))
+    # plt.ylim(0, 1)
+    if logscale:
+        plt.yscale("log")
+    else:
+        plt.gca().yaxis.set_major_locator(MaxNLocator(8))
+        plt.gca().yaxis.set_minor_locator(AutoMinorLocator(5))
 
     plt.grid(True)
     plt.legend()
@@ -130,7 +136,8 @@ if __name__ == "__main__":
     elif len(argv) > 2:
         images = argv[1:]
     else:
-        images = []
+        # images = []
+        images = glob("image/output_*.txt")
 
     if images:  # 有指定影像檔案
         width = max(len(img) for img in images) + 1
@@ -139,48 +146,30 @@ if __name__ == "__main__":
             result = compare_images("image/image2.txt", img)
             print(f"{img+':':<{width}} {result}")
     else:
-        # mse, psnr, ssim = {}, {}, {}
+        mse, psnr, ssim = {}, {}, {}
 
-        # for k in tqdm(range(1, 65), desc="Comparing images"):
-        #     img = f"image/output_{k}.txt"
-        #     result = compare_images("image/image2.txt", img)
-        #     mse[k] = result.MSE
-        #     psnr[k] = result.PSNR
-        #     ssim[k] = result.SSIM
+        for k in tqdm(range(1, 65), desc="Comparing images"):
+            img = f"image/output_{k}.txt"
+            result = compare_images("image/image2.txt", img)
+            mse[k] = result.MSE
+            psnr[k] = result.PSNR
+            ssim[k] = result.SSIM
 
-        # # filename = "plots/block_1_64-512.json"
-        # # filename = "plots/overlap_1_64-512.json"
-        # filename = "plots/sliding_1_64-512.json"
+        filename = "plots/sliding_1.json"
 
-        # with open(filename, "w") as f:
-        #     results = {
-        #         "MSE": mse,
-        #         "PSNR": psnr,
-        #         "SSIM": ssim,
-        #     }
-        #     json.dump(results, f, indent=4)
+        with open(filename, "w") as f:
+            results = {
+                "MSE": mse,
+                "PSNR": psnr,
+                "SSIM": ssim,
+            }
+            json.dump(results, f, indent=4)
 
-        # with open(filename, "r") as f:
-        #     results = json.load(f)
-        #     keys = sorted(int(k) for k in results["MSE"].keys())
-        #     mse = [results["MSE"][str(k)] for k in keys]
-        #     psnr = [results["PSNR"][str(k)] for k in keys]
-        #     ssim = [results["SSIM"][str(k)] for k in keys]
-
-        # show_psnr_ssim_plot(filename.replace(".json", ".png"), keys, psnr, ssim)
-
-        keys = list(range(1, 65))
-
-        with open("plots/block_1_64-512.json", "r") as f:
+        with open(filename, "r") as f:
             results = json.load(f)
-            ssim1 = [results["SSIM"][str(k)] for k in keys]
+            keys = sorted(int(k) for k in results["MSE"].keys())
+            mse = [results["MSE"][str(k)] for k in keys]
+            psnr = [results["PSNR"][str(k)] for k in keys]
+            ssim = [results["SSIM"][str(k)] for k in keys]
 
-        with open("plots/overlap_1_64-512.json", "r") as f:
-            results = json.load(f)
-            ssim2 = [results["SSIM"][str(k)] for k in keys]
-
-        with open("plots/sliding_1_64-512.json", "r") as f:
-            results = json.load(f)
-            ssim3 = [results["SSIM"][str(k)] for k in keys]
-
-        show_diff_ssim_plot("ssim2.png", keys, ssim1, "Block", ssim2, "Overlap", ssim3, "Sliding")
+        show_psnr_ssim_plot(filename.replace(".json", ".png"), keys, psnr, ssim)
