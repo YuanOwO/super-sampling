@@ -13,15 +13,15 @@
 
 /**
  * 拉格朗日插值法
- * @param y 取樣點陣列
+ * @param ys 取樣點陣列
  * @param xi 要插值的點
  * @return 插值結果
  */
-double lagrange(const std::vector<double>& y, double xi) {
+double lagrange(const std::vector<double>& ys, double xi) {
     double ret = 0.0;  // 回傳值
-    for (int i = 0; i < y.size(); i++) {
-        double term = y[i];
-        for (int j = 0; j < y.size(); j++) {
+    for (int i = 0; i < ys.size(); i++) {
+        double term = ys[i];
+        for (int j = 0; j < ys.size(); j++) {
             if (i == j) continue;
             term *= (xi - j) / (i - j);
         }
@@ -36,6 +36,7 @@ double lagrange(const std::vector<double>& y, double xi) {
  * 計算區塊取樣範圍
  *
  * @param xi 插值位置
+ * @param N 插值範圍大小
  * @param K 區塊大小
  *
  * @return std::pair<int, int> 取樣範圍的左、右界
@@ -52,18 +53,17 @@ std::pair<int, int> get_block_range(int x, int N, int K) {
  *
  * @param src 輸入影像
  * @param dst 輸出影像
- * @param K 區塊大小
- * @param get_range 取樣範圍的計算函數
+ * @param blockSize 區塊大小 (K)
  * @param overlap 是否使用重疊取樣
  * @param clamped 是否將結果限制在 [0, 1]
  *
  * @return std::pair<double, double> 計算出的最小值與最大值
  */
-std::pair<double, double> super_row(const Image& src, Image& dst, int K, bool overlap, bool clamped) {
-    K = src.width / (src.width / K);  // 調整 K 的大小，使每個區塊儘量均勻
+std::pair<double, double> super_row(const Image& src, Image& dst, int blockSize, bool overlap, bool clamped) {
+    blockSize = src.width / (src.width / blockSize);  // 調整 blockSize 的大小，使每個區塊儘量均勻
 
-    double scale = (double)(src.width) / (dst.width);  // [0, M] -> [0, N] 的縮放比例
-    double mx = 1.0f, mn = 0.0f;                       // 記錄最大值、最小值
+    double scale = (double)src.width / dst.width;  // [0, M) -> [0, N) 的縮放比例
+    double mx = 1.0, mn = 0.0;                     // 記錄最大值、最小值
 
     for (int i = 0; i < dst.height; i++) {
         int last_left = -1;      // 上一次的 left 位置
@@ -72,7 +72,7 @@ std::pair<double, double> super_row(const Image& src, Image& dst, int K, bool ov
         for (int j = 0; j < dst.width; j++) {
             double xi = j * scale;  // 在原始影像中的位置
 
-            auto [left, right] = get_block_range((int)xi, src.width, K);  // 取樣區塊的範圍
+            auto [left, right] = get_block_range((int)xi, src.width, blockSize);  // 取樣區塊的範圍
 
             if (overlap) {                       // 使用 overlap 方式
                 if (left > 0) left--;            // 向左擴展取樣範圍
@@ -98,65 +98,14 @@ std::pair<double, double> super_row(const Image& src, Image& dst, int K, bool ov
     return {mn, mx};
 }
 
-/**
- * 行方向的 super sampling
- *
- * @param src 輸入影像
- * @param dst 輸出影像
- * @param K 區塊大小
- * @param get_range 取樣範圍的計算函數
- * @param overlap 是否使用重疊取樣
- * @param clamped 是否將結果限制在 [0, 1]
- *
- * @return std::pair<double, double> 計算出的最小值與最大值
- */
-std::pair<double, double> super_column(const Image& src, Image& dst, int K, bool overlap, bool clamped) {
-    K = src.height / (src.height / K);  // 調整 K 的大小，使每個區塊儘量均勻
-
-    double scale = (double)(src.height) / (dst.height);  // [0, M] -> [0, N] 的縮放比例
-    double mx = 1.0f, mn = 0.0f;                         // 記錄最大值、最小值
-
-    for (int j = 0; j < dst.width; j++) {
-        int last_top = -1;       // 上一次的 top 位置
-        std::vector<double> ys;  // 插值的取樣點
-
-        for (int i = 0; i < dst.height; i++) {
-            double xi = i * scale;  // 在原始影像中的位置
-
-            auto [top, bottom] = get_block_range((int)xi, src.height, K);  // 取樣區塊的範圍
-
-            if (overlap) {                          // 使用 overlap 方式
-                if (top > 0) top--;                 // 向上擴展取樣範圍
-                if (bottom < src.height) bottom++;  // 向下擴展取樣範圍
-            }
-
-            if (top != last_top) {  // 更新取樣點 (如有需要)
-                ys.resize(bottom - top);
-                for (int ii = 0, t = top; t < bottom; ii++, t++) {
-                    ys[ii] = src.data[t][j];
-                }
-                last_top = top;
-            }
-
-            double value = lagrange(ys, xi - top);
-            if (clamped) value = clamp(value);
-            mx = std::max(mx, value), mn = std::min(mn, value);
-
-            dst.data[i][j] = value;
-        }
-    }
-
-    return {mn, mx};
-}
-
 /**********************************************************************************************************************/
 
 /**
  * 計算 sliding window 的取樣範圍
  *
  * @param xi 插值位置
+ * @param N 插值範圍大小
  * @param K 區塊大小
- *
  * @return std::pair<int, int> 取樣範圍的左、右界
  */
 std::pair<int, int> get_sliding_range(int xi, int N, int K) {
@@ -172,23 +121,23 @@ std::pair<int, int> get_sliding_range(int xi, int N, int K) {
  *
  * @param src 輸入影像
  * @param dst 輸出影像
- * @param K 區塊大小
+ * @param blockSize 區塊大小 (K)
  * @param clamped 是否將結果限制在 [0, 1]
  *
  * @return std::pair<double, double> 計算出的最小值與最大值
  */
-std::pair<double, double> sliding_row(const Image& src, Image& dst, int K, bool clamped) {
-    double scale = (double)(src.width) / (dst.width);  // [0, M] -> [0, N] 的縮放比例
-    double mx = 1.0f, mn = 0.0f;                       // 記錄最大值、最小值
+std::pair<double, double> sliding_row(const Image& src, Image& dst, int blockSize, bool clamped) {
+    double scale = (double)src.width / dst.width;  // [0, M) -> [0, N) 的縮放比例
+    double mx = 1.0f, mn = 0.0f;                   // 記錄最大值、最小值
 
     for (int i = 0; i < dst.height; i++) {
-        int last_left = -1;         // 上一次的 left 位置
-        std::vector<double> ys(K);  // 插值的取樣點
+        int last_left = -1;                 // 上一次的 left 位置
+        std::vector<double> ys(blockSize);  // 插值的取樣點
 
         for (int j = 0; j < dst.width; j++) {
             double xi = j * scale;  // 在原始影像中的位置
 
-            auto [left, right] = get_sliding_range((int)xi, src.width, K);  // 取樣區塊的範圍
+            auto [left, right] = get_sliding_range((int)xi, src.width, blockSize);  // 取樣區塊的範圍
 
             if (left != last_left) {  // 更新取樣點 (如有需要)
                 for (int jj = 0, l = left; l < right; jj++, l++)
@@ -208,87 +157,51 @@ std::pair<double, double> sliding_row(const Image& src, Image& dst, int K, bool 
 }
 
 /**
- * 行方向的 super sampling
- * 使用 sliding window 的方式使插入點保持在區塊中央
- *
- * @param src 輸入影像
- * @param dst 輸出影像
- * @param K 區塊大小
- * @param clamped 是否將結果限制在 [0, 1]
- *
- * @return std::pair<double, double> 計算出的最小值與最大值
- */
-std::pair<double, double> sliding_column(const Image& src, Image& dst, int K, bool clamped) {
-    double scale = (double)(src.height) / (dst.height);  // [0, M] -> [0, N] 的縮放比例
-    double mx = 1.0f, mn = 0.0f;                         // 記錄最大值、最小值
-
-    for (int j = 0; j < dst.width; j++) {
-        int last_top = -1;          // 上一次的 top 位置
-        std::vector<double> ys(K);  // 插值的取樣點
-
-        for (int i = 0; i < dst.height; i++) {
-            double xi = i * scale;  // 在原始影像中的位置
-
-            auto [top, bottom] = get_sliding_range((int)xi, src.height, K);  // 取樣區塊的範圍
-
-            if (top != last_top) {  // 更新取樣點 (如有需要)
-                for (int ii = 0, t = top; t < bottom; ii++, t++)
-                    ys[ii] = src.data[t][j];
-                last_top = top;
-            }
-
-            double value = lagrange(ys, xi - top);
-            if (clamped) value = clamp(value);
-            mx = std::max(mx, value), mn = std::min(mn, value);
-
-            dst.data[i][j] = value;
-        }
-    }
-
-    return {mn, mx};
-}
-
-/**
  * 進行 super sampling
  * 先對行方向進行插值，再對列方向進行插值
  *
  * @param src 輸入影像
  * @param dst 輸出影像
- * @param K 區塊大小
+ * @param blockSize 區塊大小 (K)
  * @param method 計算方法
  *      十六位數: 0: 使用區塊取樣 (預設)，1: 使用 overlap 取樣，2: 使用 sliding window
  *      個位數: 0: 每次插值時 clamp，1: 最後再 clamp (預設)，2: 線性正規化
  */
-void super_sample(const Image& src, Image& dst, int K, int method) {
+void super_sample(const Image& src, Image& dst, int blockSize, int method) {
     Image mid = zerosImage(dst.width, src.height, NULL);  // 中間影像
 
-    bool clamped = (method % 16 == 0);  // 每次插值時是否 clamp
     bool overlap = (method / 16 == 1);  // 是否使用 overlap 取樣
-    double mn1, mx1, mn2, mx2;
+    bool clamped = (method % 16 == 0);  // 是否在每次插值時 clamp
+    std::pair<double, double> p1, p2;   // 記錄最大值、最小值
 
     if (method / 16 < 2) {  // 使用一般或 overlap 方法
-        auto p1 = super_row(src, mid, K, overlap, clamped);
-        auto p2 = super_column(mid, dst, K, overlap, clamped);
-        mn1 = p1.first, mx1 = p1.second;
-        mn2 = p2.first, mx2 = p2.second;
+        // 列方向插值
+        p1 = super_row(src, mid, blockSize, overlap, clamped);
+        transposeImage(&mid);
+        // 行方向插值
+        p2 = super_row(mid, dst, blockSize, overlap, clamped);
+        transposeImage(&dst);
     } else if (method / 16 == 2) {  // 使用 sliding window 方法
-        auto p1 = sliding_row(src, mid, K, clamped);
-        auto p2 = sliding_column(mid, dst, K, clamped);
-        mn1 = p1.first, mx1 = p1.second;
-        mn2 = p2.first, mx2 = p2.second;
+        // 列方向插值
+        p1 = sliding_row(src, mid, blockSize, clamped);
+        // 行方向插值
+        transposeImage(&mid);
+        p2 = sliding_row(mid, dst, blockSize, clamped);
+        transposeImage(&dst);
     } else {  // 未知的方法
         std::cerr << "Error: Unknown method code " << std::hex << method << std::endl;
         freeImage(mid);
         return;
     }
 
-    if (method % 16 == 1) {  // 最後再 clamp
+    double mn1 = p1.first, mx1 = p1.second, mn2 = p2.first, mx2 = p2.second;
+
+    if (method % 16 == CLAMP_AT_END) {  // 最後再 clamp
         for (int i = 0; i < dst.height; i++)
             for (int j = 0; j < dst.width; j++)
                 dst.data[i][j] = clamp(dst.data[i][j]);
-    } else if (method % 16 == 2) {  // 正規化到 [0, 1]
+    } else if (method % 16 == NORMALIZE_AT_END) {  // 正規化到 [0, 1]
         double mx = std::max(mx1, mx2), mn = std::min(mn1, mn2);
-
         for (int i = 0; i < dst.height; i++) {
             for (int j = 0; j < dst.width; j++) {
                 dst.data[i][j] = normalize(dst.data[i][j], mn, mx);

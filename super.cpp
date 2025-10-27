@@ -37,17 +37,16 @@ int main(int argc, char** argv) {
     // 刪除舊的輸出檔案
 #if _WIN32 || _WIN64  // Windows
     int ret = system("del /Q image\\output_*");
-#else  // Linux 或 macOS
+#elif __linux__ || (__APPLE__ && __MACH__)  // Linux or macOS
     int ret = system("rm -f image/output_*");
 #endif
     assert(ret == 0);  // 命令應該要成功執行
 
     // 進行 super sampling
-    vector<int> k_list = {1, 2, 4, 6, 8, 16, 32};  // 不同的 K 值測試
-    string outputs;                                // 輸出檔案名稱列表
+    vector<int> k_list = {1, 2, 4, 8, 16, 32};  // 不同的 K 值測試
+    string outputs;                             // 輸出檔案名稱列表
 
-    // for (int k : k_list) {
-    for (int k = 1; k <= 64; k++) {
+    for (int k : k_list) {
         string dstFilename = "image/output_" + to_string(k) + ".txt";
         outputs += " " + dstFilename;
         cout << "Generating `" << dstFilename << "' ..." << endl;
@@ -62,9 +61,11 @@ int main(int argc, char** argv) {
     freeImage(src);
 
     // 顯示輸入、輸出影像
-#if _WIN32 || _WIN64  // Windows
+#if _WIN32  // Windows
     string command = "./display.exe " + srcFilename + outputs;
-#else  // Linux 或 macOS
+#elif __APPLE__ && __MACH__  // macOS
+    string command = "./convert" + outputs;
+#elif __linux__              // Linux
     string command = "./display " + srcFilename + outputs + " & ./convert" + outputs;
 #endif
     ret = system(command.c_str());

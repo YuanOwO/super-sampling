@@ -12,15 +12,14 @@ double lagrange(const std::vector<double>& y, double xi);
 
 std::pair<int, int> get_block_range(int xi, int N, int K);
 
-std::pair<double, double> super_row(const Image& src, Image& dst, int K, bool overlap = true, bool clamped = true);
-std::pair<double, double> super_column(const Image& src, Image& dst, int K, bool overlap = true, bool clamped = true);
+std::pair<double, double> super_row(const Image& src, Image& dst, int blockSize, bool overlap = true,
+                                    bool clamped = true);
 
 // 使用 sliding window
 
 std::pair<int, int> get_sliding_range(int xi, int N, int K);
 
-std::pair<double, double> sliding_row(const Image& src, Image& dst, int K, bool clamped = true);
-std::pair<double, double> sliding_column(const Image& src, Image& dst, int K, bool clamped = true);
+std::pair<double, double> sliding_row(const Image& src, Image& dst, int blockSize, bool clamped = true);
 
 #define USE_METHOD_BLOCK 0
 #define USE_METHOD_OVERLAP 0x10
@@ -30,5 +29,5 @@ std::pair<double, double> sliding_column(const Image& src, Image& dst, int K, bo
 #define CLAMP_AT_END 1
 #define NORMALIZE_AT_END 2
 
-void super_sample(const Image& src, Image& dst, int K, int clamping_method = USE_METHOD_SLIDING | CLAMP_AT_END);
+void super_sample(const Image& src, Image& dst, int blockSize, int clamping_method = USE_METHOD_SLIDING | CLAMP_AT_END);
 #endif  // INTERPOLATION_H

@@ -37,7 +37,7 @@
     ./super <input_image> <M>
     ```
 
-    其中 `<input_image>` 是輸入的低解析度影像檔案名稱，預設為 `image/input.png`；
+    其中 `<input_image>` 是輸入的低解析度影像檔案名稱，預設為 `image/image1.txt`；
     `<M>` 是輸出影像的解析度大小 (輸出影像為 M x M)，預設為原圖的八倍大小。
     輸出影像會存放在 `image/output_<K>.txt`，其中 `<K>` 是區塊大小。
 

@@ -44,4 +44,17 @@ static void freeImage(Image img) {
     img.width = img.height = 0;
 }
 
+// 轉置影像
+static void transposeImage(Image* img) {
+    if (!img || !img->data) return;
+    Image tmp = zerosImage(img->height, img->width, img->name);
+
+    for (int i = 0; i < img->height; i++)
+        for (int j = 0; j < img->width; j++)
+            tmp.data[j][i] = img->data[i][j];
+
+    freeImage(*img);  // 釋放原本的記憶體
+    *img = tmp;       // 更新 img 為轉置後的影像
+}
+
 #endif  // IMAGE_H
