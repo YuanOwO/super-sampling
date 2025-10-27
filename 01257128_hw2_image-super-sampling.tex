@@ -13,10 +13,16 @@
 \usepackage{enumerate}
 \usepackage{enumitem}
 \usepackage{ulem}
-\usepackage{graphicx}                       % 插入圖片 
-\usepackage{subcaption}                     % 子圖
+\usepackage{graphicx}
+\usepackage{multicol}
 \usepackage{titlesec}
+\usepackage{xpatch}
 \usepackage{hyperref}                       % 超連結
+\usepackage{subcaption}                     % 子圖
+% \usepackage{courier}
+% \usepackage[Glenn]{fncychap}              % 排版，頁面模板
+% \usepackage{CJKulem}
+% \usepackage[T1]{fontenc}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -384,11 +390,11 @@ void super_row(const Image& src, Image& dst, int blockSize, bool overlap, bool c
     \item \lstinline|interpolation.cpp:lagrange()|：
           實作拉格朗日插值法的函式，給定一組取樣點 \lstinline|ys| 與欲插值的位置 $x_i$，回傳插值後的結果。
           其中由於取樣點的 $x$ 座標為 $0, 1, \ldots, n-1$，因此在計算時直接使用索引值來代表 $x$ 座標。
-          \begin{equation*}
+          \begin{equation}
               p(x) = \sum_{i=0}^{n} y_i \ell_i(x), \quad
               \ell_i(x) = \prod_{j=0, j \neq i}^{n} \frac{x - x_j}{x_i - x_j}
               = \prod_{j=0, j \neq i}^{n} \frac{x - j}{i - j}
-          \end{equation*}
+          \end{equation}
           \begin{lstlisting}[language=C++]
 double lagrange(const std::vector<double>& ys, double xi) {
     double ret = 0.0;  // 回傳值
@@ -500,7 +506,7 @@ std::pair<int, int> get_sliding_range(int xi, int N, int K) {
 \end{table}
 
 
-\section*{結果分析}
+\subsection*{結果分析}
 
 根據上述結果，我們可以觀察到以下幾點：
 \begin{itemize}
@@ -528,6 +534,51 @@ std::pair<int, int> get_sliding_range(int xi, int N, int K) {
           %   然而對組數據使用成對樣本 t 檢定，得 t 統計量約 $10.6238$，p 值約為 $1.1199 \times 10^{-15}$，遠小於顯著水準 $0.05$，
           %   表示兩種方法的輸出結果在統計上仍能檢測出差異，不過
 \end{itemize}
+
+\subsection*{其他想法：正規化}
+
+除了 clamp 操作外，我也思考過是否可以使用正規化（normalization）方法來處理插值過程中可能出現的過大或過小值。
+其中一種想法是在線性正規化（linear normalization），
+若果插值結果超出 $[0, 1]$ 範圍，則將整張圖片的像素值線性映射到 $[0, 1]$ 範圍內，
+即對於每個像素值 $I_{ij}$，進行以下轉換：
+
+\begin{equation}
+    I_{ij}' = \frac{I_{ij} - I_{min}}{I_{max} - I_{min}}
+\end{equation}
+
+其中 $I_{min}$ 與 $I_{max}$ 分別為整張圖片的最小與最大像素值。
+不過經過測試後發現，使用線性正規化反而會導致變得更糟糕，因為這會改變整張圖片的對比度與亮度分佈，例如讓影像偏白、偏暗等。
+甚至在 $K = 16$ 時，因為 Runge 現象導致極端值過大，整個影像幾乎全黑。
+因此我非常不建議直接使用此方法。
+
+\begin{figure}[h]
+    \centering
+    \subcaptionbox{$K = 2$}{\includegraphics[width=.3\textwidth]{image/normal_K2.png}}
+    \hspace{0.25cm}
+    \subcaptionbox{$K = 4$}{\includegraphics[width=.3\textwidth]{image/normal_K4.png}}
+
+    \subcaptionbox{$K = 8$}{\includegraphics[width=.3\textwidth]{image/normal_K8.png}}
+    \hspace{0.25cm}
+    \subcaptionbox{$K = 16$}{\includegraphics[width=.3\textwidth]{image/normal_K16.png}}
+    \caption{使用線性正規化的結果}
+    \label{fig:normal}
+\end{figure}
+
+此外，我也考慮了一種基於 Z-score 的非線性正規化方法。具體做法是選定某個平均值 $\mu$（如 $0.5$）與標準差 $\sigma \neq 0$，
+將每個像素值 $I_{ij}$ 轉換為：
+
+\begin{equation}
+    I_{ij}' = \frac{I_{ij} - \mu}{\sigma}
+\end{equation}
+
+再透過線性正規化將結果映射到 $[0, 1]$ 範圍內。
+
+此方法的優點在於，若插值法輸出值近似服從常態分佈，
+約 $68.2 \%$ 數值將集中在 $\pm 1\sigma$ 範圍內，約 $95.7 \%$ 數值將集中在 $\pm 2\sigma$ 範圍內。
+換言之，適當選擇 $\mu$ 與 $\sigma$ 可以使大部分數值集中於特定區間內，減少極端值對整體影像的影響。
+
+然而，即便使用此方法可降低極端值的影響，影像的對比度與細節仍可能無法完全保留，並可能受到數值震盪的干擾。
+由於時間有限，我並未針對此方法進行深入研究，此處僅提出作為未來可能的研究方向。
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
