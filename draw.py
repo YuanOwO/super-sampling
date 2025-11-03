@@ -52,8 +52,5 @@ show_diff_plot("clamp-timing2.png", keys, "PSNR Value (dB)", psnr4, "Clamped eac
 #             )
 #             print(f"  K={k}: {r}")
 
-<<<<<<< HEAD
 print("Hello main")
-=======
 print("Hello feature")
->>>>>>> feature
