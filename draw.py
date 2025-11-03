@@ -51,3 +51,5 @@ show_diff_plot("clamp-timing2.png", keys, "PSNR Value (dB)", psnr4, "Clamped eac
 #                 SSIM=float(results["SSIM"][str(k)]),
 #             )
 #             print(f"  K={k}: {r}")
+
+print("Hello main")
