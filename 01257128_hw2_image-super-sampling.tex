@@ -1,4 +1,4 @@
-\documentclass[a4paper,  10pt, oneside, fleqn]{article}
+\documentclass[a4paper, 10pt, oneside, fleqn]{article}
 
 \usepackage{amsmath, amssymb, amsthm}       % 美國數學學會
 \usepackage[CheckSingle, CJKmath]{xeCJK}    % 中文
@@ -10,55 +10,30 @@
 \usepackage{datetime2}                      % 日期、時間
 \usepackage{listings}                       % 顯示 code 用的
 \usepackage{tikz}                           % 畫圖
-\usepackage{enumerate}
-\usepackage{enumitem}
-\usepackage{ulem}
-\usepackage{graphicx}
-\usepackage{multicol}
-\usepackage{titlesec}
-\usepackage{xpatch}
+\usepackage{enumerate}                      % 列舉環境
+\usepackage{enumitem}                       % 自訂列舉環境
+\usepackage{ulem}                           % 文字底線、刪除線
+\usepackage{graphicx}                       % 插入圖片
+\usepackage{multicol}                       % 多欄排版
 \usepackage{hyperref}                       % 超連結
 \usepackage{subcaption}                     % 子圖
-% \usepackage{courier}
-% \usepackage[Glenn]{fncychap}              % 排版，頁面模板
-% \usepackage{CJKulem}
-% \usepackage[T1]{fontenc}
+\usepackage{cancel}                         % 取消線
+\usepackage{multirow}                       % 表格合併列
+\usepackage{float}                          % 浮動物件位置強制
+\usepackage{notomath}                       % Noto 數學字體
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \setmainfont{Noto Serif}  % 主要字體
-[
-    % Path           = ../.fonts/Noto_Serif/,
-    % Extension      = .ttf,
-    % UprightFont    = *-Regular,
-    % BoldFont       = *-Bold,
-    % ItalicFont     = *-Italic,
-    % BoldItalicFont = *-BoldItalic,
-]
 
-\setmonofont{Consolas}[  % 等寬字體
-    Path           = ../.fonts/Consolas/,
-    Extension      = .ttf,
-    UprightFont    = *-Regular,
-    BoldFont       = *-Bold,
-    ItalicFont     = *-Italic,
-    % BoldItalicFont = *-BoldItalic,
-]
+\setmonofont{Menlo}  % 等寬字體
 
-\setCJKmainfont{NotoSerifTC}[  % 中文主要字體
-    Path           = ../.fonts/Noto_Serif_TC/,
-    Extension      = .ttf,
-    UprightFont    = *-Regular,
-    BoldFont       = *-Bold,
+\setCJKmainfont{Noto Serif TC}[  % 中文主要字體
     ItalicFont     = *-Regular, % 中文沒有斜體
     BoldItalicFont = *-Bold,    % 中文沒有斜體
 ]
 
-\setCJKmonofont{NotoSerifTC}[  % 中文等寬字體
-    Path           = ../.fonts/Noto_Serif_TC/,
-    Extension      = .ttf,
-    UprightFont    = *-Regular,
-    BoldFont       = *-Bold,
+\setCJKmonofont{Noto Sans TC}[  % 中文等寬字體
     ItalicFont     = *-Regular, % 中文沒有斜體
     BoldItalicFont = *-Bold,    % 中文沒有斜體
 ]
@@ -82,7 +57,7 @@
 % \renewcommand{\keywordcolor}{\color{black}}
 % \renewcommand{\identifiercolor}{\color{black}}
 % \renewcommand{\commentcolor}{\color{black!70}}
-% \renewcommand{\stringcolor}{\color{black!50}}
+% \renewcommand{\stringcolor}{\color{black!55}}
 
 \makeatletter
 \lst@CCPutMacro\lst@ProcessOther {"2D}{\lst@ttfamily{-{}}{-{}}}
@@ -113,31 +88,25 @@
     stringstyle=\itshape\stringcolor,       % 字串的字型
 }
 
-\newcommand{\inputcpp}[ 1]{\lstinputlisting[language=C++]{#1}}  % 引入 C++
-\newcommand{\inputpy}[ 1]{\lstinputlisting[language=Python]{#1}}     % 引入蟒蛇
-\newcommand{\inputjava}[ 1]{\lstinputlisting[language=Java]{#1}}     % 引入爪哇
-\newcommand{\inputtxt}[ 1]{\lstinputlisting{#1}}                     % 引入文字檔
+\newcommand{\inputcpp}[ 1]{\lstinputlisting[language=C++]{#1}}      % 引入 C++
+\newcommand{\inputpy}[ 1]{\lstinputlisting[language=Python]{#1}}    % 引入 Python
+\newcommand{\inputjava}[ 1]{\lstinputlisting[language=Java]{#1}}    % 引入 Java
+\newcommand{\inputtxt}[ 1]{\lstinputlisting{#1}}                    % 引入文字檔
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\geometry{a4paper}                           % 頁面 A4 大小
-% \geometry{includehead}  % 內文區塊包含頁首，沒有頁尾、旁注
-\geometry{headsep=5mm}                       % 頁首和內文的距離
-\geometry{vmargin=1in, hmargin=1in}    % 垂直、水平邊界
+\geometry{a4paper}                  % 頁面 A4 大小
+% \geometry{includehead}            % 內文區塊包含頁首，沒有頁尾、旁注
+\geometry{headsep=5mm}              % 頁首和內文的距離
+\geometry{vmargin=1in, hmargin=1in} % 垂直、水平邊界
 
-\setlength{\columnsep}{3mm}                  % 兩欄模式的間距
-\setlength{\columnseprule}{0pt}              % 兩欄模式間格線粗細
+\setlength{\parskip}{1.25ex}        % 段落間距
 
-% \titlespacing{\section}{0cm}{24pt}{6pt}
-% \titlespacing{\subsection}{0cm}{0cm}{0cm}
+\XeTeXlinebreaklocale "zh"          % 中文自動換行
+\XeTeXlinebreakskip = 0pt plus 1pt  % 設定段落之間的距離
 
-\setcounter{secnumdepth}{3}                  % 目錄顯示第三層
-
-\XeTeXlinebreaklocale "zh"                   % 中文自動換行
-\XeTeXlinebreakskip = 0pt plus 1pt           % 設定段落之間的距離
-
-\renewcommand{\arraystretch}{1.5}
-\setlength{\tabcolsep}{8pt}
+\renewcommand{\arraystretch}{1.5}   % 表格列高
+\setlength{\tabcolsep}{1.25ex}      % 表格欄寬
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -163,22 +132,6 @@
 
 \begin{document}
 \pagestyle{fancy}
-
-%%%%%%%%%%
-
-% 有序列表樣式
-% \renewcommand{\labelenumii}{\arabic{enumi}.\arabic{enumii}.}
-% \renewcommand{\labelenumiii}{\arabic{enumi}.\arabic{enumii}.\arabic{enumiii}.}
-% \renewcommand{\labelenumiv}{\arabic{enumi}.\arabic{enumii}.\arabic{enumiii}.\arabic{enumiv}.}
-
-%%%%%%%%%%
-
-% 目錄
-% \renewcommand{\contentsname}{Contents}
-% \scriptsize
-% \begin{multicols}{2}
-%     \tableofcontents
-% \end{multicols}
 
 %%%%%%%%%%
 
@@ -461,6 +414,8 @@ std::pair<int, int> get_sliding_range(int xi, int N, int K) {
 
 \section*{成果展示}
 
+下圖（\autoref{fig:input}）為 Tronclass 提供的測試影像。左側為輸入的低解析度影像（64 $\times$ 64），右側為對應的高解析度標準影像（512 $\times$ 512）。
+
 \begin{figure}[h]
     \centering
     \subcaptionbox{原始低解析度影像（image1.txt）}
@@ -471,8 +426,6 @@ std::pair<int, int> get_sliding_range(int xi, int N, int K) {
     \caption{Tronclass 提供的測試影像}
     \label{fig:input}
 \end{figure}
-
-上圖（\autoref{fig:input}）為 Tronclass 提供的測試影像。左側為輸入的低解析度影像（64 $\times$ 64），右側為對應的高解析度標準影像（512 $\times$ 512）。
 
 由於我實作的三種方法皆可處理任意區塊大小 $K$，不必限定為 $N$ 的因數。因此我針對所有的整數 $K = 1 \sim 64$ 都進行測試。不過考量篇幅，這裡僅展示部分結果，即 $K = 1, 2, 4, 8, 16, 32$ 的情況。
 
